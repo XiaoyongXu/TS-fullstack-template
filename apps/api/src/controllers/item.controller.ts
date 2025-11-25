@@ -1,56 +1,66 @@
 import { Request, Response } from 'express';
-import { Item } from '../models/item.model';
+import {
+  getItemsDB,
+  getItemDB,
+  createItemDB,
+  updateItemDB,
+  deleteItemDB,
+} from '../models/item.model';
 
-let items: Item[] = [
-  { id: 1, name: 'Item 1', description: 'This is item 1' },
-  { id: 2, name: 'Item 2', description: 'This is item 2' },
-  { id: 2, name: 'Item 3', description: 'This is item 3' },
-];
-
-export const getItems = (req: Request, res: Response) => {
-  res.json(items);
-};
-
-export const getItem = (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
-  const item = items.find((i) => i.id === id);
-  if (item) {
-    res.json(item);
-  } else {
-    res.status(404).json({ message: 'Item not found' });
+export const getItems = async (req: Request, res: Response) => {
+  try {
+    const items = await getItemsDB();
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching items' });
   }
 };
 
-export const createItem = (req: Request, res: Response) => {
-  const { name, description } = req.body;
-  const newItem: Item = {
-    id: items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1,
-    name,
-    description,
-  };
-  items.push(newItem);
-  res.status(201).json(newItem);
+export const getItem = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const item = await getItemDB(id);
+    if (item) {
+      res.json(item);
+    } else {
+      res.status(404).json({ message: 'Item not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching item' });
+  }
 };
 
-export const updateItem = (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
-  const itemIndex = items.findIndex((i) => i.id === id);
-  if (itemIndex !== -1) {
+export const createItem = async (req: Request, res: Response) => {
+  try {
     const { name, description } = req.body;
-    items[itemIndex] = { ...items[itemIndex], name, description };
-    res.json(items[itemIndex]);
-  } else {
-    res.status(404).json({ message: 'Item not found' });
+    const newItem = await createItemDB(name, description);
+    res.status(201).json(newItem);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating item' });
   }
 };
 
-export const deleteItem = (req: Request, res: Response) => {
-  const id = parseInt(req.params.id, 10);
-  const itemIndex = items.findIndex((i) => i.id === id);
-  if (itemIndex !== -1) {
-    items = items.filter((i) => i.id !== id);
+export const updateItem = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { name, description } = req.body;
+    const updatedItem = await updateItemDB(id, name, description);
+    if (updatedItem) {
+      res.json(updatedItem);
+    } else {
+      res.status(404).json({ message: 'Item not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating item' });
+  }
+};
+
+export const deleteItem = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await deleteItemDB(id);
     res.status(204).send();
-  } else {
-    res.status(404).json({ message: 'Item not found' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting item' });
   }
 };
